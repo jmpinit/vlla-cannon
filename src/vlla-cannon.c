@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <math.h>
+#include <time.h>
 
 #include "cannon.h"
 #include "audio.h"
@@ -115,6 +116,7 @@ void gameloop() {
     int length = 12;
 
     missile missiles[8];
+    alien aliens[8];
 
     forever {
         // update
@@ -150,6 +152,33 @@ void gameloop() {
             }
         }
 
+        // spawn alien?
+        alien* a = NULL;
+
+        for(int i=0; i < 8 && a == NULL; i++) {
+            if(!aliens[i].active)
+                a = &aliens[i];
+        }
+
+        if(rand() % 100 > 95) {
+            a->x = 59;
+            a->y = 16;
+            a->vx = -0.1;
+            a->vy = (float)(rand() % 1000) / 1000.0 - 0.5;
+            a->active = true;
+        }
+
+        // move aliens
+        for(int i=0; i < 8; i++) {
+            if(aliens[i].active) {
+                aliens[i].x += aliens[i].vx;
+                aliens[i].y += aliens[i].vy;
+
+                if(aliens[i].x < 0 || aliens[i].y < 0 || aliens[i].x >= WIDTH || aliens[i].y >= HEIGHT)
+                    aliens[i].active = false;
+            }
+        }
+
         for(int i=0; i < 8; i++) {
             if(missiles[i].active) {
                 missiles[i].x += missiles[i].vx;
@@ -162,22 +191,31 @@ void gameloop() {
 
         // render
         clear(vlla);
-        color_set(&stroke, 5, 5, 5);
 
-        circle(vlla, 0, 16, 8);
-        line(vlla, 0, 16, length * cos(player.angle), 16 + length * sin(player.angle));
+        color_set(&stroke, 5, 0, 0);
+        for(int i=0; i < 8; i++) {
+            if(aliens[i].active) {
+                circle(vlla, (int)aliens[i].x, (int)aliens[i].y, 3);
+            }
+        }
 
+        color_set(&stroke, 5, 5, 0);
         for(int i=0; i < 8; i++) {
             if(missiles[i].active) {
                 circle(vlla, (int)missiles[i].x, (int)missiles[i].y, missiles[i].radius);
             }
         }
 
+        color_set(&stroke, 0, 0, 5);
+        circle(vlla, 0, 16, 8);
+        line(vlla, 0, 16, length * cos(player.angle), 16 + length * sin(player.angle));
+
         vlla_update(vlla);
     }
 }
 
 int main(int argc, char *argv[]) {
+    srand(time(NULL));
     audio_init(fft);
     gameloop();
 }

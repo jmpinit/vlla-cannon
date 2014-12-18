@@ -18,7 +18,9 @@ typedef struct missile {
 } missile;
 
 typedef struct alien {
-    int x, y;
+    bool active;
+    float x, y;
+    float vx, vy;
     int points;
 } alien;
 
