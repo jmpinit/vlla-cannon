@@ -18,8 +18,9 @@ kiss_fft_cfg fft_cfg;
 kiss_fft_cpx *fft_in;
 kiss_fft_cpx *fft_out;
 float log_pwr_fft[FFT_SIZE];
+uint8_t* fft_shared_data;
 
-void fft_init(float* fft_data);
+void fft_init(uint8_t* fft_data);
 void fft_shift(unsigned int amt);
 void fft_update(void);
 
@@ -48,6 +49,8 @@ void fft_update() {
         int v = OUTERSCALE * (YZERO + (int)(-log_pwr_fft[i] * SCALE));
         v = (v < 0)?      0       : v;
         v = (v > 0xff)?   0xff    : v;
+
+        fft_shared_data[i] = v;
     }
 }
 
@@ -83,10 +86,12 @@ void* audio_tick(void *arg) {
     return NULL;
 }
 
-void fft_init(float* fft_data) {
+void fft_init(uint8_t* fft_data) {
     fft_cfg = kiss_fft_alloc(FFT_SIZE, false, NULL, NULL);
     fft_in = (kiss_fft_cpx*)malloc(FFT_SIZE * sizeof(kiss_fft_cpx));
     fft_out = (kiss_fft_cpx*)malloc(FFT_SIZE * sizeof(kiss_fft_cpx));
+
+    fft_shared_data = fft_data;
 
     if(fft_in == NULL || fft_out == NULL) {
         printf("Not enough memory.\n");
@@ -98,7 +103,7 @@ void audio_close() {
     snd_pcm_close(capture_handle);
 }
 
-void audio_init(float* fft_data) {
+void audio_init(uint8_t* fft_data) {
     int err;
 
     char* device = "mic";

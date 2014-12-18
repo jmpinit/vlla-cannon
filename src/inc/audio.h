@@ -9,7 +9,9 @@
 #define SCALE -1.0f
 #define OUTERSCALE 0.8f
 
-void audio_init(float* fft_data);
+void audio_init(uint8_t* fft_data);
 void audio_close(void);
+
+void fft_update(void);
 
 #endif
