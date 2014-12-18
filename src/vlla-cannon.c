@@ -82,7 +82,19 @@ void line(VLLA* vlla, int x0, int y0, int x1, int y1) {
     }
 }
 
-float main_freq(uint8_t* fft) {
+float snd_energy(uint8_t* fft, float bottom, float top) {
+    int b = (int)(bottom * FFT_SIZE);
+    int t = (int)(top * FFT_SIZE);
+
+    float energy = 0;
+    for(int i=b; i < t && i < FFT_SIZE; i++) {
+        energy += fft[i];
+    }
+
+    return energy / (t-b);
+}
+
+float snd_main_freq(uint8_t* fft) {
     int max = fft[0];
     int max_i = 0;
 
@@ -102,18 +114,51 @@ void gameloop() {
     cannon player = { 0, 0 };
     int length = 12;
 
-    alien a1 = { 52, 16, 10 };
+    missile missiles[8];
 
     forever {
         // update
         fft_update();
-        float freq = main_freq(fft);
 
-        float bottom = 0.25;
-        float top = 0.4;
+        static float bottom = 0.25;
+        static float top = 0.4;
+
+        float freq = snd_main_freq(fft);
+        float energy = snd_energy(fft, 0.1, 0.9);
+        printf("%f\n", energy);
 
         if(freq > bottom && freq < top)
             player.angle = M_PI * (freq - bottom) / (top - bottom) - M_PI / 2.0;
+
+        if(energy > 0.6) {
+            missile* m = NULL;
+
+            for(int i=0; i < 8 && m == NULL; i++) {
+                if(!missiles[i].active)
+                    m = &missiles[i];
+            }
+
+            if(m != NULL) {
+                m->radius = 2;
+                m->x = 0;
+                m->y = 16;
+                m->vx = cos(player.angle);
+                m->vy = sin(player.angle);
+                m->active = true;
+
+                printf("missile fired!\n");
+            }
+        }
+
+        for(int i=0; i < 8; i++) {
+            if(missiles[i].active) {
+                missiles[i].x += missiles[i].vx;
+                missiles[i].y += missiles[i].vy;
+
+                if(missiles[i].x < 0 || missiles[i].y < 0 || missiles[i].x >= WIDTH || missiles[i].y >= HEIGHT)
+                    missiles[i].active = false;
+            }
+        }
 
         // render
         clear(vlla);
@@ -122,7 +167,12 @@ void gameloop() {
         circle(vlla, 0, 16, 8);
         line(vlla, 0, 16, length * cos(player.angle), 16 + length * sin(player.angle));
 
-        rect(vlla, a1.x-1, a1.y-1, 3, 3);
+        for(int i=0; i < 8; i++) {
+            if(missiles[i].active) {
+                circle(vlla, (int)missiles[i].x, (int)missiles[i].y, missiles[i].radius);
+            }
+        }
+
         vlla_update(vlla);
     }
 }

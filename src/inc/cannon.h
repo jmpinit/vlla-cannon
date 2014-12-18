@@ -10,6 +10,13 @@ typedef struct cannon {
     int score;
 } cannon;
 
+typedef struct missile {
+    bool active;
+    float x, y;
+    float vx, vy;
+    float radius;
+} missile;
+
 typedef struct alien {
     int x, y;
     int points;
